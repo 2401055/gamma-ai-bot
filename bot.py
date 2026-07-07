@@ -39,15 +39,17 @@ def get_message_content(username, domain, msg_id):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma الذكي (V4.2)! 🚀\n\nتم تحسين دقة الضغط على الأزرار وتخطي الحمايات.\n\nاضغط على /referral للبدء.")
+    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma الخارق (V4.3)! 🚀\n\nتم تحديث البوت بتقنيات التخفي المتقدمة.\n\nاضغط على /referral للبدء.")
 
 @bot.message_handler(commands=['referral'])
 def start_referral(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, "جاري تشغيل محرك الأتمتة... 🤖")
+    bot.send_message(chat_id, "جاري تشغيل محرك الأتمتة المتخفي... 🕵️‍♂️")
     
     co = ChromiumOptions().set_argument('--headless').set_argument('--no-sandbox').set_argument('--disable-gpu').set_argument('--disable-dev-shm-usage')
-    co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36')
+    # إخفاء بصمة الأتمتة
+    co.set_argument('--disable-blink-features=AutomationControlled')
+    co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36')
     
     page = ChromiumPage(co)
     
@@ -57,25 +59,37 @@ def start_referral(message):
         bot.send_message(chat_id, f"تم إنشاء بريد: {email}")
         
         # 2. التسجيل في Gamma
-        bot.send_message(chat_id, "جاري الدخول إلى Gamma... ⏳")
+        bot.send_message(chat_id, "جاري محاكاة زيارة حقيقية لـ Gamma... ⏳")
         page.get(REFERRAL_LINK)
-        time.sleep(15)
+        time.sleep(20) # زيادة الوقت لتخطي أي تحدي أمان
         
+        # محاولة إغلاق أي نوافذ منبثقة أو ملفات تعريف الارتباط
+        try:
+            cookie_btn = page.ele('@@text():Accept') or page.ele('@@text():Allow')
+            if cookie_btn: cookie_btn.click()
+        except: pass
+
         # إدخال البريد
         email_input = page.ele('@id=email') or page.ele('@type=email') or page.ele('tag:input')
         if email_input:
-            email_input.input(email)
-            time.sleep(3) # انتظار الزر ليصبح متاحاً
+            # محاكاة الكتابة البشرية
+            for char in email:
+                email_input.input(char)
+                time.sleep(random.uniform(0.1, 0.3))
             
-            # محاولة الضغط على الزر بأكثر من طريقة
-            submit_btn = page.ele('@@text():Continue with email') or page.ele('tag:button@@text():Continue with email') or page.ele('tag:button')
+            time.sleep(5)
+            
+            # البحث عن الزر باستخدام النص أو الترتيب
+            submit_btn = page.ele('@@text():Continue with email') or page.ele('tag:button@@text():Continue with email')
+            
+            if not submit_btn:
+                # إذا لم يجد النص، يبحث عن أي زر بعد حقل الإيميل
+                submit_btn = page.ele('tag:button')
             
             if submit_btn:
-                # محاولة الضغط الحقيقي (JS click إذا فشل العادي)
-                try:
-                    submit_btn.click()
-                except:
-                    page.run_js("arguments[0].click();", submit_btn)
+                bot.send_message(chat_id, "تم العثور على الزر! جاري الضغط... 🔘")
+                submit_btn.click()
+                time.sleep(5)
                 
                 bot.send_message(chat_id, "تم إرسال الطلب بنجاح! بانتظار رسالة التأكيد... 📩")
                 
@@ -109,17 +123,16 @@ def start_referral(message):
                         first_name.input('Youssef')
                         page.ele('@placeholder=Last name').input('Saleh')
                         page.ele('@type=password').input('GammaPass2026!')
-                        time.sleep(2)
+                        time.sleep(3)
                         final_btn = page.ele('tag:button@@text():Continue') or page.ele('@@text():Continue')
-                        if final_btn:
-                            final_btn.click()
+                        if final_btn: final_btn.click()
                         time.sleep(10)
                     
                     bot.send_message(chat_id, "🎉 تمت المهمة بنجاح! تم إضافة 200 كريديت لحسابك.")
                 else:
-                    bot.send_message(chat_id, "❌ لم تصل الرسالة. قد يكون النطاق محظوراً حالياً.")
+                    bot.send_message(chat_id, "❌ لم تصل الرسالة. قد يكون الموقع كشف البوت أو النطاق محظور.")
             else:
-                bot.send_message(chat_id, "❌ فشل العثور على زر التسجيل. جرب مرة أخرى.")
+                bot.send_message(chat_id, "❌ فشل العثور على زر التسجيل. الموقع قد يكون فعل حماية Turnstile.")
         else:
             bot.send_message(chat_id, "❌ فشل العثور على حقل البريد.")
             
