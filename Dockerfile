@@ -1,50 +1,14 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
-# Install system dependencies
+# Install basic dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
     curl \
-    unzip \
-    libgconf-2-4 \
-    libnss3 \
-    libxss1 \
-    libasound2 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgcc1 \
-    libgdk-pixbuf2.0-0 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxtst6 \
     ca-certificates \
-    fonts-liberation \
-    libappindicator1 \
-    lsb-release \
-    xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
+# Install Chrome and all its dependencies automatically
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
     && apt-get update \
@@ -58,7 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Set environment variable for DrissionPage to find chrome
+# Ensure the environment is set for headless operation
 ENV CHROME_PATH=/usr/bin/google-chrome-stable
+ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "bot.py"]
