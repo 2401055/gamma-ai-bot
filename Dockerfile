@@ -1,4 +1,4 @@
-FROM joyzoursky/python-chromedriver:3.9-selenium
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -7,7 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# DrissionPage can use the pre-installed chromedriver/chrome in this image
 ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "bot.py"]
