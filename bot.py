@@ -17,7 +17,9 @@ def generate_random_string(length=10):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 def get_temp_mail():
-    domain = random.choice(['1secmail.com', '1secmail.org', '1secmail.net'])
+    # استخدام نطاقات متنوعة لزيادة فرص وصول البريد
+    domains = ['1secmail.com', '1secmail.org', '1secmail.net', 'esiix.com', 'wwjmp.com']
+    domain = random.choice(domains)
     username = generate_random_string(10)
     email = f"{username}@{domain}"
     return username, domain, email
@@ -38,42 +40,43 @@ def get_message_content(username, domain, msg_id):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma المطور! 🚀\n\nاضغط على /referral للبدء.")
+    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma المطور (V2.0)! 🚀\n\nهذا البوت يستخدم محاكي متصفح حقيقي لتخطي الحمايات.\n\nاضغط على /referral للبدء.")
 
 @bot.message_handler(commands=['referral'])
 def start_referral(message):
     chat_id = message.chat.id
-    bot.send_message(chat_id, "جاري بدء العملية باستخدام محاكي المتصفح لضمان تخطي الحماية... 🛡️")
+    bot.send_message(chat_id, "جاري تشغيل محاكي المتصفح... 🖥️")
     
-    co = ChromiumOptions().set_argument('--headless').set_argument('--no-sandbox')
+    co = ChromiumOptions().set_argument('--headless').set_argument('--no-sandbox').set_argument('--disable-gpu')
     page = ChromiumPage(co)
     
     try:
         # 1. الحصول على بريد مؤقت
         username, domain, email = get_temp_mail()
-        bot.send_message(chat_id, f"تم إنشاء بريد: {email}")
+        bot.send_message(chat_id, f"تم إنشاء بريد جديد: {email}")
         
-        # 2. التسجيل في Gamma عبر المتصفح
+        # 2. التسجيل في Gamma
+        bot.send_message(chat_id, "جاري الدخول إلى Gamma وتعبئة البيانات... ⏳")
         page.get(REFERRAL_LINK)
-        time.sleep(5)
+        time.sleep(7)
         
-        # البحث عن حقل الإيميل وإدخاله
         email_input = page.ele('@id=email')
         if email_input:
             email_input.input(email)
-            time.sleep(1)
-            # البحث عن زر المتابعة والضغط عليه
+            time.sleep(2)
+            
+            # محاولة الضغط على الزر بأكثر من طريقة لضمان النجاح
             submit_btn = page.ele('tag:button@@text():Continue with email')
             if not submit_btn:
                 submit_btn = page.ele('@@text():Continue with email')
             
             if submit_btn:
                 submit_btn.click()
-                bot.send_message(chat_id, "تم إدخال البريد بنجاح. بانتظار رسالة التأكيد... 📩")
+                bot.send_message(chat_id, "تم إرسال الطلب بنجاح! بانتظار رسالة التأكيد... 📩")
                 
                 # 3. فحص البريد
                 found_link = None
-                for i in range(15):
+                for i in range(20): # زيادة وقت الانتظار قليلاً
                     time.sleep(10)
                     messages = check_mail(username, domain)
                     for msg in messages:
@@ -88,31 +91,31 @@ def start_referral(message):
                                         break
                         if found_link: break
                     if found_link: break
-                    bot.send_message(chat_id, f"فحص البريد ({i+1}/15)...")
+                    bot.send_message(chat_id, f"فحص البريد ({i+1}/20)...")
                 
                 if found_link:
-                    bot.send_message(chat_id, "✅ تم العثور على الرابط! جاري التفعيل النهائي...")
+                    bot.send_message(chat_id, "✅ تم استلام البريد! جاري التفعيل وإضافة الكريديت... 🎉")
                     page.get(found_link)
                     time.sleep(10)
                     
-                    # إكمال بيانات الحساب إذا طلب الموقع (الاسم والباسورد)
+                    # ملء البيانات إذا ظهرت
                     if page.ele('@placeholder=First name'):
-                        page.ele('@placeholder=First name').input('Alex')
-                        page.ele('@placeholder=Last name').input('Dev')
-                        page.ele('@type=password').input('Gamma@2026')
+                        page.ele('@placeholder=First name').input('Youssef')
+                        page.ele('@placeholder=Last name').input('Saleh')
+                        page.ele('@type=password').input('GammaPass2026!')
                         page.ele('tag:button@@text():Continue').click()
-                        time.sleep(5)
+                        time.sleep(7)
                     
-                    bot.send_message(chat_id, "🎉 تمت العملية بنجاح! تم إضافة 200 كريديت لحسابك.")
+                    bot.send_message(chat_id, "🎉 مبروك! تمت عملية الإحالة بنجاح وتم إضافة 200 كريديت.")
                 else:
-                    bot.send_message(chat_id, "❌ فشل في استلام البريد. قد يكون الموقع حظر النطاق.")
+                    bot.send_message(chat_id, "❌ لم تصل الرسالة. قد يكون الموقع قام بحظر نطاق البريد المؤقت حالياً. جرب مرة أخرى بعد قليل.")
             else:
-                bot.send_message(chat_id, "❌ لم يتم العثور على زر التسجيل.")
+                bot.send_message(chat_id, "❌ خطأ: لم يتم العثور على زر التسجيل.")
         else:
-            bot.send_message(chat_id, "❌ لم يتم العثور على حقل الإدخال.")
+            bot.send_message(chat_id, "❌ خطأ: حقل البريد غير متاح حالياً.")
             
     except Exception as e:
-        bot.send_message(chat_id, f"حدث خطأ: {str(e)}")
+        bot.send_message(chat_id, f"حدث خطأ تقني: {str(e)}")
     finally:
         page.quit()
 
