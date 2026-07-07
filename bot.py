@@ -39,7 +39,7 @@ def get_message_content(username, domain, msg_id):
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma المستقر (V4.1)! 🚀\n\nتم تحسين سرعة الاستجابة وتخطي الحمايات.\n\nاضغط على /referral للبدء.")
+    bot.reply_to(message, "مرحباً بك في بوت أتمتة Gamma الذكي (V4.2)! 🚀\n\nتم تحسين دقة الضغط على الأزرار وتخطي الحمايات.\n\nاضغط على /referral للبدء.")
 
 @bot.message_handler(commands=['referral'])
 def start_referral(message):
@@ -47,7 +47,6 @@ def start_referral(message):
     bot.send_message(chat_id, "جاري تشغيل محرك الأتمتة... 🤖")
     
     co = ChromiumOptions().set_argument('--headless').set_argument('--no-sandbox').set_argument('--disable-gpu').set_argument('--disable-dev-shm-usage')
-    # إضافة بصمة متصفح حقيقية
     co.set_user_agent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36')
     
     page = ChromiumPage(co)
@@ -58,28 +57,27 @@ def start_referral(message):
         bot.send_message(chat_id, f"تم إنشاء بريد: {email}")
         
         # 2. التسجيل في Gamma
-        bot.send_message(chat_id, "جاري الدخول إلى Gamma (قد يستغرق 15 ثانية)... ⏳")
+        bot.send_message(chat_id, "جاري الدخول إلى Gamma... ⏳")
         page.get(REFERRAL_LINK)
+        time.sleep(15)
         
-        # الانتظار حتى تحميل الصفحة بالكامل (البحث عن حقل الإيميل بمرونة)
-        found_input = False
-        for _ in range(3): # محاولة البحث 3 مرات
-            time.sleep(10)
-            email_input = page.ele('@id=email') or page.ele('@type=email') or page.ele('tag:input')
-            if email_input:
-                found_input = True
-                email_input.input(email)
-                time.sleep(2)
-                break
-            page.refresh() # إعادة تحميل الصفحة إذا لم يجد الحقل
-        
-        if found_input:
-            # البحث عن زر المتابعة
-            submit_btn = page.ele('tag:button@@text():Continue with email') or page.ele('@@text():Continue with email') or page.ele('tag:button')
+        # إدخال البريد
+        email_input = page.ele('@id=email') or page.ele('@type=email') or page.ele('tag:input')
+        if email_input:
+            email_input.input(email)
+            time.sleep(3) # انتظار الزر ليصبح متاحاً
+            
+            # محاولة الضغط على الزر بأكثر من طريقة
+            submit_btn = page.ele('@@text():Continue with email') or page.ele('tag:button@@text():Continue with email') or page.ele('tag:button')
             
             if submit_btn:
-                submit_btn.click()
-                bot.send_message(chat_id, "تم إرسال الطلب! بانتظار رسالة التأكيد... 📩")
+                # محاولة الضغط الحقيقي (JS click إذا فشل العادي)
+                try:
+                    submit_btn.click()
+                except:
+                    page.run_js("arguments[0].click();", submit_btn)
+                
+                bot.send_message(chat_id, "تم إرسال الطلب بنجاح! بانتظار رسالة التأكيد... 📩")
                 
                 # 3. فحص البريد
                 found_link = None
@@ -111,16 +109,19 @@ def start_referral(message):
                         first_name.input('Youssef')
                         page.ele('@placeholder=Last name').input('Saleh')
                         page.ele('@type=password').input('GammaPass2026!')
-                        page.ele('tag:button@@text():Continue').click()
+                        time.sleep(2)
+                        final_btn = page.ele('tag:button@@text():Continue') or page.ele('@@text():Continue')
+                        if final_btn:
+                            final_btn.click()
                         time.sleep(10)
                     
                     bot.send_message(chat_id, "🎉 تمت المهمة بنجاح! تم إضافة 200 كريديت لحسابك.")
                 else:
-                    bot.send_message(chat_id, "❌ لم تصل الرسالة. قد يكون النطاق محظوراً. جرب مرة أخرى.")
+                    bot.send_message(chat_id, "❌ لم تصل الرسالة. قد يكون النطاق محظوراً حالياً.")
             else:
-                bot.send_message(chat_id, "❌ فشل العثور على زر التسجيل.")
+                bot.send_message(chat_id, "❌ فشل العثور على زر التسجيل. جرب مرة أخرى.")
         else:
-            bot.send_message(chat_id, "❌ فشل العثور على حقل البريد. تأكد من أن الموقع يعمل بشكل جيد.")
+            bot.send_message(chat_id, "❌ فشل العثور على حقل البريد.")
             
     except Exception as e:
         bot.send_message(chat_id, f"حدث خطأ تقني: {str(e)}")
